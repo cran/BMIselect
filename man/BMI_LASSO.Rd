@@ -88,7 +88,7 @@ for the selected submodel after projection.}
 Fit a Bayesian multiple-imputation LASSO (BMI-LASSO) model across
 multiply-imputed datasets, using one of four priors: Multi-Laplace,
 Horseshoe, ARD, or Spike-Laplace. Automatically standardizes data,
-runs MCMC in parallel, performs variable selection via three-step
+runs MCMC in parallel, performs variable selection via four-step
 projection predictive variable selection, and selects a final submodel by BIC.
 }
 \examples{
