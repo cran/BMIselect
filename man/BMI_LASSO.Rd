@@ -15,9 +15,9 @@ BMI_LASSO(
   nburn = 4000,
   npost = 4000,
   seed = NULL,
-  nchain = 1,
+  nchains = 1,
   ncores = 1,
-  verbose = TRUE,
+  output_verbose = TRUE,
   printevery = 1000,
   ...
 )
@@ -52,11 +52,11 @@ degrees‐of‐freedom estimations.  Default \code{FALSE}.}
 
 \item{seed}{Optional integer; base random seed.  Each chain adds its index.}
 
-\item{nchain}{Integer; number of MCMC chains to run in parallel. Default \code{1}.}
+\item{nchains}{Integer; number of MCMC chains to run in parallel. Default \code{1}.}
 
 \item{ncores}{Integer; number of parallel cores to use. Default \code{1}.}
 
-\item{verbose}{Logical; print progress messages. Default \code{TRUE}.}
+\item{output_verbose}{Logical; print progress messages. Default \code{TRUE}.}
 
 \item{printevery}{Integer; print status every so many iterations. Default \code{1000}.}
 
@@ -69,14 +69,14 @@ degrees‐of‐freedom estimations.  Default \code{FALSE}.}
 \value{
 A named list with elements:
 \describe{
-\item{\code{posterior}}{List of length \code{nchain} of MCMC outputs (posterior draws).}
-\item{\code{select}}{List of length \code{nchain} of logical matrices showing
+\item{\code{posterior}}{List of length \code{nchains} of MCMC outputs (posterior draws).}
+\item{\code{select}}{List of length \code{nchains} of logical matrices showing
 which variables are selected at each grid value.}
-\item{\code{best_select}}{List of length \code{nchain} of the single best
+\item{\code{best_select}}{List of length \code{nchains} of the single best
 selection (by BIC) for each chain.}
-\item{\code{posterior_best_models}}{List of length \code{nchain} of projected
+\item{\code{posterior_best_models}}{List of length \code{nchains} of projected
 posterior draws for the best submodel.}
-\item{\code{bic_models}}{List of length \code{nchain} of BIC values and
+\item{\code{bic_models}}{List of length \code{nchains} of BIC values and
 degrees-of-freedom for each candidate submodel.}
 \item{\code{summary_table_full}}{A data frame summarizing rank-normalized
 split-Rhat and other diagnostics for the full model.}
@@ -97,6 +97,6 @@ X <- sim$data_MI$X
 Y <- sim$data_MI$Y
 fit <- BMI_LASSO(X, Y, model = "Horseshoe",
                  nburn = 100, npost = 100,
-                 nchain = 1, ncores = 1)
+                 nchains = 1, ncores = 1)
 str(fit$best_select)
 }

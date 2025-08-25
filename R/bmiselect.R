@@ -29,9 +29,9 @@ if (getRversion() >= "2.15.1") {
 #' @param nburn Integer; number of burn-in MCMC iterations per chain. Default \code{4000}.
 #' @param npost Integer; number of post-burn-in samples to retain per chain. Default \code{4000}.
 #' @param seed Optional integer; base random seed.  Each chain adds its index.
-#' @param nchain Integer; number of MCMC chains to run in parallel. Default \code{1}.
+#' @param nchains Integer; number of MCMC chains to run in parallel. Default \code{1}.
 #' @param ncores Integer; number of parallel cores to use. Default \code{1}.
-#' @param verbose Logical; print progress messages. Default \code{TRUE}.
+#' @param output_verbose Logical; print progress messages. Default \code{TRUE}.
 #' @param printevery Integer; print status every so many iterations. Default \code{1000}.
 #' @param \dots Additional model-specific hyperparameters:
 #'   - For \code{"Multi_Laplace"}: \code{h} (shape) and \code{v} (scale) of Gamma hyperprior.
@@ -39,14 +39,14 @@ if (getRversion() >= "2.15.1") {
 #'
 #' @return A named list with elements:
 #' \describe{
-#'   \item{\code{posterior}}{List of length \code{nchain} of MCMC outputs (posterior draws).}
-#'   \item{\code{select}}{List of length \code{nchain} of logical matrices showing
+#'   \item{\code{posterior}}{List of length \code{nchains} of MCMC outputs (posterior draws).}
+#'   \item{\code{select}}{List of length \code{nchains} of logical matrices showing
 #'     which variables are selected at each grid value.}
-#'   \item{\code{best_select}}{List of length \code{nchain} of the single best
+#'   \item{\code{best_select}}{List of length \code{nchains} of the single best
 #'     selection (by BIC) for each chain.}
-#'   \item{\code{posterior_best_models}}{List of length \code{nchain} of projected
+#'   \item{\code{posterior_best_models}}{List of length \code{nchains} of projected
 #'     posterior draws for the best submodel.}
-#'   \item{\code{bic_models}}{List of length \code{nchain} of BIC values and
+#'   \item{\code{bic_models}}{List of length \code{nchains} of BIC values and
 #'     degrees-of-freedom for each candidate submodel.}
 #'   \item{\code{summary_table_full}}{A data frame summarizing rank-normalized
 #'     split-Rhat and other diagnostics for the full model.}
@@ -60,16 +60,17 @@ if (getRversion() >= "2.15.1") {
 #' Y <- sim$data_MI$Y
 #' fit <- BMI_LASSO(X, Y, model = "Horseshoe",
 #'                  nburn = 100, npost = 100,
-#'                  nchain = 1, ncores = 1)
+#'                  nchains = 1, ncores = 1)
 #' str(fit$best_select)
 #' @export
-BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 1, 0.01), orthogonal = FALSE, nburn = 4000, npost = 4000, seed = NULL, nchain = 1, ncores = 1, verbose = TRUE, printevery = 1000, ...){
+BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 1, 0.01), orthogonal = FALSE, nburn = 4000, npost = 4000, seed = NULL, nchains = 1, ncores = 1, output_verbose = TRUE, printevery = 1000, ...){
   # -------------------------------
   # 1. Validate input model
   # -------------------------------
   if (!model %in% c("Multi_Laplace", "Horseshoe", "ARD", "Spike_Laplace")) {
     stop("Invalid model_name. Available options: Multi_Laplace, Horseshoe, ARD, Spike_Laplace.")
   }
+
 
   start = Sys.time()
 
@@ -126,21 +127,21 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
   switch(model,
          "Multi_Laplace" = {
            if (!("h" %in% names(extra_parameters))) {
-             if(verbose) cat("Missing 'h' for Multi_Laplace. Use default value h = 2", "\n")
+             if(output_verbose) cat("Missing 'h' for Multi_Laplace. Use default value h = 2", "\n")
              extra_parameters$h = 2
            }
            if (!("v" %in% names(extra_parameters))) {
-             if(verbose) cat(paste0("Missing 'v' for Multi_Laplace. Use default value v = ", (D+1)/D / (extra_parameters$h - 1)), "\n")
+             if(output_verbose) cat(paste0("Missing 'v' for Multi_Laplace. Use default value v = ", (D+1)/D / (extra_parameters$h - 1)), "\n")
              extra_parameters$v = (D+1)/D / (extra_parameters$h - 1)
            }
          },
          "Spike_Laplace" = {
            if (!("a" %in% names(extra_parameters))) {
-             if(verbose) cat("Missing 'a' for Spike_Laplace. Use default value a = 2", "\n")
+             if(output_verbose) cat("Missing 'a' for Spike_Laplace. Use default value a = 2", "\n")
              extra_parameters$a = 2
            }
            if (!("b" %in% names(extra_parameters))) {
-             if(verbose) cat(paste0("Missing 'b' for Spike_Laplace. Use default value b = ", (D+1)/(2 * D) / (extra_parameters$a - 1)), "\n")
+             if(output_verbose) cat(paste0("Missing 'b' for Spike_Laplace. Use default value b = ", (D+1)/(2 * D) / (extra_parameters$a - 1)), "\n")
              extra_parameters$b = (D+1)/(2 * D) / (extra_parameters$a - 1)
            }
          }
@@ -161,31 +162,31 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
   # 8. Run MCMC chains in parallel
   # -------------------------------
   model_chains = suppressWarnings(foreach::foreach(
-    chain = 1:nchain, .combine = list, .multicombine = TRUE,
-    .maxcombine = ifelse(nchain >= 2, nchain, 2)
+    chain = 1:nchains, .combine = list, .multicombine = TRUE,
+    .maxcombine = ifelse(nchains >= 2, nchains, 2)
   ) %dopar% {
     seed_chain = if (!is.null(seed)) seed + chain else NULL
     return(switch(model,
                   "Multi_Laplace" = {
                     multi_laplace_mcmc(X, Y, intercept = !standardize, h = extra_parameters$h, v = extra_parameters$v,
                                        nburn = nburn, npost = npost, seed = seed_chain,
-                                       verbose = verbose, printevery = printevery, chain_index = chain)
+                                       verbose = output_verbose, printevery = printevery, chain_index = chain)
                   },
                   "Horseshoe" = {
                     horseshoe_mcmc(X, Y, intercept = !standardize,
                                    nburn = nburn, npost = npost, seed = seed_chain,
-                                   verbose = verbose, printevery = printevery, chain_index = chain)
+                                   verbose = output_verbose, printevery = printevery, chain_index = chain)
                   },
                   "ARD" = {
                     ARD_mcmc(X, Y, intercept = !standardize,
                              nburn = nburn, npost = npost, seed = seed_chain,
-                             verbose = verbose, printevery = printevery, chain_index = chain)
+                             verbose = output_verbose, printevery = printevery, chain_index = chain)
                   },
                   "Spike_Laplace" = {
                     spike_laplace_partially_mcmc(X, Y, intercept = !standardize,
                                        a = extra_parameters$a, b = extra_parameters$b,
                                        nburn = nburn, npost = npost, seed = seed_chain,
-                                       verbose = verbose, printevery = printevery, chain_index = chain)
+                                       verbose = output_verbose, printevery = printevery, chain_index = chain)
                   }
     ))
   })
@@ -280,7 +281,7 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
   # -------------------------------
   bic_models = foreach::foreach(
     i = seq_along(select), .combine = list, .multicombine = TRUE,
-    .maxcombine = ifelse(nchain >= 2, nchain, 2)) %dopar% {
+    .maxcombine = ifelse(nchains >= 2, nchains, 2)) %dopar% {
       apply(select[[i]], 1, function(subselect){
         if(standardize == TRUE)
           project_beta_sigma2 = projection_mean(X, apply(model_chains[[i]]$post_beta, c(2,3), mean), subselect, mean(model_chains[[i]]$post_sigma2))
@@ -361,7 +362,7 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
   # -------------------------------
   posterior_best_models = foreach::foreach(
     ij = seq_along(best_select), .combine = list, .multicombine = TRUE,
-    .maxcombine = ifelse(nchain >= 2, nchain, 2)) %dopar% {
+    .maxcombine = ifelse(nchains >= 2, nchains, 2)) %dopar% {
 
     if(standardize == TRUE)
       projection =  projection_posterior(X, model_chains[[ij]]$post_beta, model_chains[[ij]]$post_sigma2, best_select[[ij]])
@@ -378,7 +379,7 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
       post_pool_alpha = as.numeric(projection$alpha2_arr)
     ))
     }
-  if(length(posterior_best_models) != nchain) posterior_best_models = list(posterior_best_models)
+  if(length(posterior_best_models) != nchains) posterior_best_models = list(posterior_best_models)
 
 
 
@@ -397,7 +398,7 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
   # Convert posterior draws back to original scale
   # -------------------------------
   if (standardize == TRUE) {
-    for (chain in 1:nchain) {
+    for (chain in 1:nchains) {
       model_chains[[chain]][["post_beta_original"]] = array(NA, dim = c(npost, D, p))
       model_chains[[chain]][["post_pool_beta_original"]] = matrix(NA, nrow = npost * D, ncol = p)
       posterior_best_models[[chain]][["post_beta_original"]] = array(NA, dim = c(npost, D, p))
@@ -419,9 +420,9 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
       posterior_best_models[[chain]][["post_alpha_original"]] = sapply(1:D, function(d) Y_mean[[d]] - sapply(1:npost, function(np) sum(posterior_best_models[[chain]][["post_beta_original"]][np,d,] * X_mean[[d]] / X_norm[[d]])))
     }
 
-    rvar_beta_pool = posterior::rvar(abind::abind(lapply(model_chains, function(chain) chain$post_pool_beta_original), along = 1.5), with_chains = TRUE, nchains = nchain)
-    rvar_sigma2 = posterior::rvar(abind::abind(lapply(model_chains, function(chain) chain$post_sigma2), along = 1.5), with_chains = TRUE, nchains = nchain)
-    rvar_intercept_pool = posterior::rvar(abind::abind(lapply(model_chains, function(chain) as.numeric(chain$post_alpha_original)), along = 1.5), with_chains = TRUE, nchains = nchain)
+    rvar_beta_pool = posterior::rvar(abind::abind(lapply(model_chains, function(chain) chain$post_pool_beta_original), along = 1.5), with_chains = TRUE, nchains = nchains)
+    rvar_sigma2 = posterior::rvar(abind::abind(lapply(model_chains, function(chain) chain$post_sigma2), along = 1.5), with_chains = TRUE, nchains = nchains)
+    rvar_intercept_pool = posterior::rvar(abind::abind(lapply(model_chains, function(chain) as.numeric(chain$post_alpha_original)), along = 1.5), with_chains = TRUE, nchains = nchains)
     summary_table_full = rbind(
       posterior::summarize_draws(rvar_intercept_pool),
       posterior::summarize_draws(rvar_beta_pool),
@@ -429,9 +430,9 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
     )
     summary_table_full$variable = stringr::str_remove(summary_table_full$variable, "rvar_")
 
-    select_rvar_beta_pool = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) chain$post_pool_beta_original), along = 1.5), with_chains = TRUE, nchains = nchain)
-    select_rvar_sigma2 = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) chain$post_sigma2), along = 1.5), with_chains = TRUE, nchains = nchain)
-    select_rvar_intercept_pool = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) as.numeric(chain$post_alpha_original)), along = 1.5), with_chains = TRUE, nchains = nchain)
+    select_rvar_beta_pool = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) chain$post_pool_beta_original), along = 1.5), with_chains = TRUE, nchains = nchains)
+    select_rvar_sigma2 = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) chain$post_sigma2), along = 1.5), with_chains = TRUE, nchains = nchains)
+    select_rvar_intercept_pool = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) as.numeric(chain$post_alpha_original)), along = 1.5), with_chains = TRUE, nchains = nchains)
     summary_table_select = rbind(
       posterior::summarize_draws(select_rvar_intercept_pool),
       posterior::summarize_draws(select_rvar_beta_pool),
@@ -439,9 +440,9 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
     )
     summary_table_select$variable = stringr::str_remove(summary_table_select$variable, "select_rvar_")
   }else{
-    rvar_beta_pool = posterior::rvar(abind::abind(lapply(model_chains, function(chain) chain$post_pool_beta), along = 1.5), with_chains = TRUE, nchains = nchain)
-    rvar_sigma2 = posterior::rvar(abind::abind(lapply(model_chains, function(chain) chain$post_sigma2), along = 1.5), with_chains = TRUE, nchains = nchain)
-    rvar_intercept_pool = posterior::rvar(abind::abind(lapply(model_chains, function(chain) as.numeric(chain$post_alpha)), along = 1.5), with_chains = TRUE, nchains = nchain)
+    rvar_beta_pool = posterior::rvar(abind::abind(lapply(model_chains, function(chain) chain$post_pool_beta), along = 1.5), with_chains = TRUE, nchains = nchains)
+    rvar_sigma2 = posterior::rvar(abind::abind(lapply(model_chains, function(chain) chain$post_sigma2), along = 1.5), with_chains = TRUE, nchains = nchains)
+    rvar_intercept_pool = posterior::rvar(abind::abind(lapply(model_chains, function(chain) as.numeric(chain$post_alpha)), along = 1.5), with_chains = TRUE, nchains = nchains)
     summary_table_full = rbind(
       posterior::summarize_draws(rvar_intercept_pool),
       posterior::summarize_draws(rvar_beta_pool),
@@ -449,9 +450,9 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
     )
     summary_table_full$variable = stringr::str_remove(summary_table_full$variable, "rvar_")
 
-    select_rvar_beta_pool = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) chain$post_pool_beta), along = 1.5), with_chains = TRUE, nchains = nchain)
-    select_rvar_sigma2 = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) chain$post_sigma2), along = 1.5), with_chains = TRUE, nchains = nchain)
-    select_rvar_intercept_pool = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) chain$post_pool_alpha), along = 1.5), with_chains = TRUE, nchains = nchain)
+    select_rvar_beta_pool = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) chain$post_pool_beta), along = 1.5), with_chains = TRUE, nchains = nchains)
+    select_rvar_sigma2 = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) chain$post_sigma2), along = 1.5), with_chains = TRUE, nchains = nchains)
+    select_rvar_intercept_pool = posterior::rvar(abind::abind(lapply(posterior_best_models, function(chain) chain$post_pool_alpha), along = 1.5), with_chains = TRUE, nchains = nchains)
     summary_table_select = rbind(
       posterior::summarize_draws(select_rvar_intercept_pool),
       posterior::summarize_draws(select_rvar_beta_pool),
@@ -465,16 +466,16 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
   # -------------------------------
   if (max(posterior::rhat(rvar_beta_pool), na.rm = TRUE) > 1.1) {
     warn_msg <- "pooled beta"
-    warning(sprintf("Full model doesn't converge. Please increase burn-in or posterior samples. The maximum of rank normalized split-Rhat of %s is %.3f", warn_msg, max(posterior::rhat(rvar_beta_pool), na.rm = TRUE)))
+    warning(sprintf("Full model doesn't converge. Please increase burn-in or posterior samples. The maximum of rank normalized split-Rhat of %s is %.2f", warn_msg, max(posterior::rhat(rvar_beta_pool), na.rm = TRUE)))
   } else {
-    if (verbose) cat(sprintf("The maximum of rank normalized split-Rhat of %s in the full model is %.3f\n", "pooled beta", max(posterior::rhat(rvar_beta_pool), na.rm = TRUE)))
+    #if (output_verbose) cat(sprintf("The maximum of rank normalized split-Rhat of %s in the full model is %.2f\n", "pooled beta", max(posterior::rhat(rvar_beta_pool), na.rm = TRUE)))
   }
 
   if (max(posterior::rhat(select_rvar_beta_pool), na.rm = TRUE) > 1.1) {
     warn_msg <- "pooled beta"
-    warning(sprintf("Selected model doesn't converge. Please increase burn-in or posterior samples. The maximum of rank normalized split-Rhat of %s is %.3f", warn_msg, max(posterior::rhat(select_rvar_beta_pool), na.rm = TRUE)))
+    warning(sprintf("Selected model doesn't converge. Please increase burn-in or posterior samples. The maximum of rank normalized split-Rhat of %s is %.2f", warn_msg, max(posterior::rhat(select_rvar_beta_pool), na.rm = TRUE)))
   } else {
-    if (verbose) cat(sprintf("The maximum of rank normalized split-Rhat of %s in the selected model is %.3f\n", "pooled beta", max(posterior::rhat(select_rvar_beta_pool), na.rm = TRUE)))
+    if (output_verbose) cat(sprintf("The maximum of rank normalized split-Rhat of %s in the selected model is %.2f\n", "pooled beta", max(posterior::rhat(select_rvar_beta_pool), na.rm = TRUE)))
   }
 
 
@@ -493,9 +494,9 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
   # 18. Report timing
   # -------------------------------
   end <- Sys.time()
-  if (verbose) {
+  if (output_verbose) {
     cat(sprintf("Running time for %d %s: %.2f minutes\n",
-                nchain, ifelse(nchain > 1, "chains", "chain"),
+                nchains, ifelse(nchains > 1, "chains", "chain"),
                 as.numeric(difftime(end, start, units = "mins"))))
   }
 
