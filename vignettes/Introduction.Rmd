@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 ## Introduction
 The R package BMIselect (Bayesian MI-LASSO for Variable Selection on Multiply-Imputed Datasets) provides a suite of Bayesian MI-LASSO for variable selection methods for multiply-imputed datasets. The package includes four Bayesian MI-LASSO models using shrinkage (Multi-Laplace, Horseshoe, ARD) and Spike-and-Slab (Spike-and-Laplace) priors, along with tools for model fitting via MCMC, four-step projection predictive variable selection, and hyperparameter calibration. Methods are suitable for continuous outcomes and both continuous and binary covariates under missing-at-random or missing-completely-at-random assumptions. See Zou, J., Wang, S. and Chen, Q. (2025), Bayesian MI-LASSO for Variable Selection on Multiply-Imputed Data. ArXiv, 2211.00114. <doi:10.48550/arXiv.2211.00114> for more details.
 
-This vignette introduces the workflow of the package, including simulating multiply-imputed dataset, running variable selection methods and reporting the post-selection inference.
+This vignette introduces the workflow of the package, including simulating a multiply-imputed dataset, running variable selection methods and reporting the post-selection inference.
 ```{r setup}
 library(BMIselect)
 seed = 12345
@@ -71,7 +71,7 @@ The first three priors are called shrinkage priors, which gently push the coeffi
 
 In the second stage, we apply a four-step projection predictive variable selection method to address the limitations above:
 
-1. Generate candidate variable subsets using different thresholds between 0 and 1 (specified by the parameter `grid`). The thresholds will be used by a scaled-neighborhood criterion (see more details in the paper). A candidate set excludes all variables when threshold is 0, and keeping all variables when threshold is 1.
+1. Generate candidate variable subsets using different thresholds between 0 and 1 (specified by the parameter `grid`). The thresholds will be used by a scaled-neighborhood criterion (see more details in the paper). A candidate set excludes all variables when the threshold is 0, and keeping all variables when the threshold is 1.
 2. Fit submodels using each candidate subset. Each submodel attempts to approximate the full model as closely as possible.
 3. Evaluate each submodel using the Bayesian Information Criterion (BIC). Select the optimal submodel based on the smallest BIC value.
 4. Report the post-selection estimates from the optimal submodel.
@@ -93,8 +93,8 @@ str(bmilasso, max.level = 1)
 The returned object is a list, containing posterior draws, selected model, BIC for all submodels, and some summary tables. We first take a look at the three important objects: `best_select`, `posterior_best_models`, and `summary_table_selected`:
 
 - `best_select`: a logical vector to indicate the selection from the optimal (sub)model. Its rowname is the corresponding threshold.
-- `posterior_best_models`: posterior draws of coefficients (beta), intercept (alpha) and regression variance (sigma2) for the optimal (sub)model. We also include the pooled posterior draws of coefficients and intercept across imputations. If parameter `standardize` of `BMI_LASSO()` is `TRUE`, our function will normalize each covariates and centralize outcomes within each imputed set. The model will exclude intercept when fitting. Then `posterior_best_models` contains the posterior draws of estimates on both normalzed scales and original scales.
-- `summary_table_selected`: a summary table to summarize the posterior estimates for the optimal (sub)model. If parameter `standardize` of `BMI_LASSO()` is `TRUE`, we report the estimates on original scales.
+- `posterior_best_models`: posterior draws of coefficients (beta), intercept (alpha) and regression variance (sigma2) for the optimal (sub)model. We also include the pooled posterior draws of coefficients and intercept across imputations. If the parameter `standardize` of `BMI_LASSO()` is `TRUE`, our function will normalize each covariate and centralize outcomes within each imputed set. The model will exclude the intercept when fitting. Then `posterior_best_models` contains the posterior draws of estimates on both normalized scales and original scales.
+- `summary_table_selected`: a summary table to summarize the posterior estimates for the optimal (sub)model. If the parameter `standardize` of `BMI_LASSO()` is `TRUE`, we report the estimates on original scales.
 
 
 ```{r}
@@ -111,10 +111,10 @@ bmilasso$summary_table_selected
 ```
 
 
-If some researcher are interested in the collections of candidate submodels and their selection vectors/BIC, the objects `select` and `bic_models` contain the information:
+If some researchers are interested in the collections of candidate submodels and their selection vectors/BIC, the objects `select` and `bic_models` contain the information:
 
-- `select`: a logical matrix. Each row is an selection vector, whose rowname indicates its threshold. We only keep unique selection rows.
-- `bic_models`: a matrix contains the BICs and degree of freedoms. Each column is a submodel.
+- `select`: a logical matrix. Each row is a selection vector, whose rowname indicates its threshold. We only keep unique selection rows.
+- `bic_models`: a matrix containing the BICs and degrees of freedom. Each column is a submodel.
 ```{r}
 # selection matrix of all (sub)models
 bmilasso$select
@@ -125,7 +125,7 @@ bmilasso$bic_models
 ```
 
 
-In some cases, if users want to test the robustness of each prior, the Bayesian group LASSO model fitted from the first stage (before projection predictive variable selection procedure) is needed. Users can access this information from objects `posterior` and `summary_table_full`. Additionally, the posterior draws of some hierarchical parameters are also included in `posterior`.
+In some cases, if users want to test the robustness of each prior, the Bayesian group LASSO model fitted from the first stage (before the projection predictive variable selection procedure) is needed. Users can access this information from objects `posterior` and `summary_table_full`. Additionally, the posterior draws of some hierarchical parameters are also included in `posterior`.
 ```{r}
 # posterior draws of parameters of fitted full model in the first stage (before projection predictive variable selection procedure)
 str(bmilasso$posterior)
@@ -135,7 +135,7 @@ str(bmilasso$posterior)
 bmilasso$summary_table_full
 ```
 
-### Hyerparameters Specification
+### Hyperparameters Specification
 In Bayesian MI-LASSO models, `"Multi_Laplace"` and `"Spike_Laplace"` priors have two hyperparameters, respectively:
 
 - `"Multi_Laplace"`: `h` (shape) and `v` (scale) of Gamma hyperprior. `h` > 1, and `v` > 0. Default: `h` = 2 and `v` = (D+1)/(D * (h - 1)).
@@ -160,8 +160,16 @@ Since `"Horseshoe"` and `"ARD"` priors do not require any hyperparameter tuning,
 
 
 ### Parallel Computing for Multiple Chains
-If multiple cores are available, parallel computing can be used for multiple chains. This function is based on R packages `doParallel` and `foreach`. Users can specify the parameter `ncores` for the number of cores when running multiple chains `nchain`.
+If multiple cores are available, parallel computing can be used for multiple chains. This function is based on the R packages `doParallel` and `foreach`. Users can specify the parameter `ncores` for the number of cores when running multiple chains `nchain`.
 ```{r}
+# run 2 chains using 2 cores in series
+start = Sys.time()
+bmilasso_series <- BMI_LASSO(data$data_MI$X, data$data_MI$Y, model = "Horseshoe",
+                 nburn = 4000, npost = 4000, output_verbose = FALSE, nchains = 2, seed = seed)
+end = Sys.time()
+print(paste("The running time for two chains in series:", difftime(end, start, units = "mins"), "mins"))
+
+
 # run 2 chains using 2 cores in parallel
 start = Sys.time()
 bmilasso_parallel <- BMI_LASSO(data$data_MI$X, data$data_MI$Y, model = "Horseshoe",
@@ -170,7 +178,7 @@ end = Sys.time()
 print(paste("The running time for two chains in parallel:", difftime(end, start, units = "mins"), "mins"))
 ```
 
-The returned results from multiple chains are different from single chain. The summary tables `summary_table_selected` and `summary_table_full` are calculated by pooling posterior draws from multiple chains. For all other output objects, results from each chain are listed separately, one by one, so users can obtain and compare the posterior estimates of each chain individually.
+The returned results from multiple chains are different from those of a single chain. The summary tables `summary_table_selected` and `summary_table_full` are calculated by pooling posterior draws from multiple chains. For all other output objects, results from each chain are listed separately, one by one, so users can obtain and compare the posterior estimates of each chain individually.
 
 ```{r}
 # the posterior draws of optimal submodels of two chains
@@ -182,7 +190,7 @@ bmilasso_parallel$summary_table_selected
 
 
 ## Frequentists MI-LASSO
-Although Bayesian MI-LASSO models have better performance than MI-LASSO, some users may be instereted in frequentists method. We also include the MI-LASSO method in the function `MI_LASSO()`, originally from [https://www.columbia.edu/~qc2138/Downloads/software/MI-lasso.R](https://www.columbia.edu/~qc2138/Downloads/software/MI-lasso.R). We further add a parameter `ncores` to allow parallel computing. We give an brief example and more details can be found in Chen, Q. and Wang, S. (2013). “Variable selection for multiply-imputed data with application to dioxin exposure study.” Statistics in Medicine, 32(21): 3646–3659.
+Although Bayesian MI-LASSO models have better performance than MI-LASSO, some users may be interested in frequentists method. We also include the MI-LASSO method in the function `MI_LASSO()`, originally from [https://www.columbia.edu/~qc2138/Downloads/software/MI-lasso.R](https://www.columbia.edu/~qc2138/Downloads/software/MI-lasso.R). We further add a parameter `ncores` to allow parallel computing. We give a brief example and more details can be found in Chen, Q. and Wang, S. (2013). “Variable selection for multiply-imputed data with application to dioxin exposure study.” Statistics in Medicine, 32(21): 3646–3659.
 ```{r}
 # fit MI-LASSO
 milasso = MI_LASSO(data$data_MI$X, data$data_MI$Y, ncores = 2)

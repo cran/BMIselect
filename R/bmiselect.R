@@ -2,6 +2,38 @@ if (getRversion() >= "2.15.1") {
   utils::globalVariables(c("i", "ij"))
 }
 
+# Rank-normalized split-Rhat / ESS computed PER IMPUTATION across chains.
+#
+# The pooled draws object stacks the D imputations along the draws axis
+# (matrix(post_beta[npost,D,p], npost*D, p)), so split-Rhat / ESS computed on
+# it treats D distinct imputation posteriors concatenated within each chain as
+# one non-stationary chain -- this structurally inflates Rhat and deflates ESS
+# even for a perfectly converged sampler.  Convergence must instead be assessed
+# for each imputation's chain separately; we report the worst case (max Rhat,
+# min ESS) over imputations.  `arrs` is a length-nchains list of [npost, D, V]
+# arrays (V = number of coefficients / variables; sigma2 uses D = V = 1).
+.rhat_ess_perimp <- function(arrs) {
+  d <- dim(arrs[[1]]); np <- d[1]; Dd <- d[2]; V <- d[3]
+  rh <- eb <- et <- rep(NA_real_, V)
+  for (v in seq_len(V)) {
+    rr <- ee <- tt <- c()
+    for (dd in seq_len(Dd)) {
+      M <- vapply(arrs, function(a) a[, dd, v], numeric(np))  # npost x nchains
+      if (all(is.finite(M)) && stats::sd(as.numeric(M)) > 0) {
+        rr <- c(rr, suppressWarnings(posterior::rhat(M)))
+        ee <- c(ee, suppressWarnings(posterior::ess_bulk(M)))
+        tt <- c(tt, suppressWarnings(posterior::ess_tail(M)))
+      }
+    }
+    if (length(rr)) {
+      rh[v] <- max(rr, na.rm = TRUE)
+      eb[v] <- min(ee, na.rm = TRUE)
+      et[v] <- min(tt, na.rm = TRUE)
+    }
+  }
+  list(rhat = rh, ess_bulk = eb, ess_tail = et)
+}
+
 #' Bayesian MI-LASSO for Multiply-Imputed Regression
 #'
 #' Fit a Bayesian multiple-imputation LASSO (BMI-LASSO) model across
@@ -259,14 +291,25 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
   }
 
   # -------------------------------
-  # 11. Remove non-full rank selection set
+  # 11. Remove non-full rank selection set, AND cap |s| <= n - 2.
+  #
+  # The cap guards against the BIC saturation pathology that arises at p > n.
+  # When |s| = n - 1 with column-centered X (and Y centered), col(X_{[s]})
+  # generically spans orth(1) -- the same (n-1)-dim subspace in which Y lives
+  # -- so P_{X_{[s]}} Y = Y exactly, SSE/(Dn) drops to numerical zero, and
+  # BIC = log(SSE/(Dn)) + df * log(Dn)/(Dn) collapses to -infinity regardless
+  # of which variables are in the subset.  Requiring |s| + 1 <= n - 1 leaves at
+  # least one residual degree of freedom for sigma^2 estimation, matching the
+  # classical regression requirement.  No effect when p <= n - 2.
   # -------------------------------
+  n_obs <- n
   select = lapply(select, function(select_set){
     valid_idx <- sapply(1:nrow(select_set), function(i) {
       se <- select_set[i, ]
+      sel_cols <- which(se)
+      if (length(sel_cols) > n_obs - 2) return(FALSE)        # |s| <= n - 2
       all(sapply(1:D, function(d) {
-        sel_cols <- which(se)
-        if (length(sel_cols) == 0) return(TRUE)  # no variables selected, skip rank check
+        if (length(sel_cols) == 0) return(TRUE)  # no variables selected
         X_sub <- cbind(1, X[d,,, drop = TRUE][, sel_cols, drop = FALSE])
         qr(X_sub)$rank == (length(sel_cols) + 1)
       }))
@@ -462,20 +505,61 @@ BMI_LASSO = function(X, Y, model, standardize = TRUE, SNC = TRUE, grid = seq(0, 
   }
 
   # -------------------------------
-  # 16. Give warning if unconverged
+  # 16. Convergence diagnostics (per-imputation) + warning
+  #
+  # summarize_draws() above computed rhat/ess on the imputation-pooled draws,
+  # which over-states non-convergence (see .rhat_ess_perimp).  We overwrite
+  # ONLY the rhat / ess_bulk / ess_tail columns with statistically correct
+  # per-imputation values; the pooled mean/median/sd/quantiles (the reported
+  # inference) are left untouched.  Row order matches the summary tables:
+  # intercept (1 row), beta_1..p (p rows), sigma2 (1 row).
   # -------------------------------
-  if (max(posterior::rhat(rvar_beta_pool), na.rm = TRUE) > 1.1) {
-    warn_msg <- "pooled beta"
-    warning(sprintf("Full model doesn't converge. Please increase burn-in or posterior samples. The maximum of rank normalized split-Rhat of %s is %.2f", warn_msg, max(posterior::rhat(rvar_beta_pool), na.rm = TRUE)))
+  .as3d <- function(m) array(m, dim = c(nrow(m), ncol(m), 1L))  # [np,D] -> [np,D,1]
+
+  if (standardize == TRUE) {
+    beta_full <- lapply(model_chains,        function(ch) ch$post_beta_original)
+    int_full  <- lapply(model_chains,        function(ch) .as3d(ch$post_alpha_original))
+    beta_sel  <- lapply(posterior_best_models, function(ch) ch$post_beta_original)
+    int_sel   <- lapply(posterior_best_models, function(ch) .as3d(ch$post_alpha_original))
   } else {
-    #if (output_verbose) cat(sprintf("The maximum of rank normalized split-Rhat of %s in the full model is %.2f\n", "pooled beta", max(posterior::rhat(rvar_beta_pool), na.rm = TRUE)))
+    beta_full <- lapply(model_chains,        function(ch) ch$post_beta)
+    int_full  <- lapply(model_chains,        function(ch) .as3d(ch$post_alpha))
+    beta_sel  <- lapply(posterior_best_models, function(ch) ch$post_beta)
+    int_sel   <- lapply(posterior_best_models, function(ch) .as3d(ch$post_alpha))
+  }
+  sig_full <- lapply(model_chains,        function(ch) array(ch$post_sigma2, dim = c(length(ch$post_sigma2), 1L, 1L)))
+  sig_sel  <- lapply(posterior_best_models, function(ch) array(ch$post_sigma2, dim = c(length(ch$post_sigma2), 1L, 1L)))
+
+  dgi_f <- .rhat_ess_perimp(int_full);  dgb_f <- .rhat_ess_perimp(beta_full);  dgs_f <- .rhat_ess_perimp(sig_full)
+  dgi_s <- .rhat_ess_perimp(int_sel);   dgb_s <- .rhat_ess_perimp(beta_sel);   dgs_s <- .rhat_ess_perimp(sig_sel)
+
+  fix_tbl <- function(tbl, di, db, ds) {
+    rh <- c(di$rhat, db$rhat, ds$rhat)
+    eb <- c(di$ess_bulk, db$ess_bulk, ds$ess_bulk)
+    et <- c(di$ess_tail, db$ess_tail, ds$ess_tail)
+    if (nrow(tbl) == length(rh)) {
+      if ("rhat"     %in% names(tbl)) tbl$rhat     <- rh
+      if ("ess_bulk" %in% names(tbl)) tbl$ess_bulk <- eb
+      if ("ess_tail" %in% names(tbl)) tbl$ess_tail <- et
+    }
+    tbl
+  }
+  summary_table_full   <- fix_tbl(summary_table_full,   dgi_f, dgb_f, dgs_f)
+  summary_table_select <- fix_tbl(summary_table_select, dgi_s, dgb_s, dgs_s)
+
+  rhat_full_max <- max(c(dgi_f$rhat, dgb_f$rhat, dgs_f$rhat), na.rm = TRUE)
+  rhat_sel_max  <- max(c(dgi_s$rhat, dgb_s$rhat, dgs_s$rhat), na.rm = TRUE)
+
+  if (is.finite(rhat_full_max) && rhat_full_max > 1.1) {
+    warning(sprintf("Full model doesn't converge. Please increase burn-in or posterior samples. The maximum per-imputation rank-normalized split-Rhat is %.3f", rhat_full_max))
+  } else if (output_verbose) {
+    cat(sprintf("Max per-imputation rank-normalized split-Rhat (full model) = %.3f\n", rhat_full_max))
   }
 
-  if (max(posterior::rhat(select_rvar_beta_pool), na.rm = TRUE) > 1.1) {
-    warn_msg <- "pooled beta"
-    warning(sprintf("Selected model doesn't converge. Please increase burn-in or posterior samples. The maximum of rank normalized split-Rhat of %s is %.2f", warn_msg, max(posterior::rhat(select_rvar_beta_pool), na.rm = TRUE)))
-  } else {
-    if (output_verbose) cat(sprintf("The maximum of rank normalized split-Rhat of %s in the selected model is %.2f\n", "pooled beta", max(posterior::rhat(select_rvar_beta_pool), na.rm = TRUE)))
+  if (is.finite(rhat_sel_max) && rhat_sel_max > 1.1) {
+    warning(sprintf("Selected model: maximum per-imputation rank-normalized split-Rhat is %.3f. With multiple chains this can also reflect variables selected in some chains but not others (selection instability) rather than non-convergence of the sampler.", rhat_sel_max))
+  } else if (output_verbose) {
+    cat(sprintf("Max per-imputation rank-normalized split-Rhat (selected model) = %.3f\n", rhat_sel_max))
   }
 
 

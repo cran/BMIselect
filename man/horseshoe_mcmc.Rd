@@ -48,14 +48,15 @@ A named list with components:
 \item{\code{post_fitted_Y}}{Array \code{npost × D × n} of posterior predictive draws (with noise).}
 \item{\code{post_pool_beta}}{Matrix \code{(npost * D) × p} of pooled coefficient draws.}
 \item{\code{post_pool_fitted_Y}}{Matrix \code{(npost * D) × n} of pooled predictive draws (with noise).}
-\item{\code{hat_matrix_proj}}{Matrix \code{D × n × n} of averaged projection hat-matrices. To avoid recalculate for estimating degree of freedom.}
+\item{\code{hat_matrix_proj}}{Array \code{D × n × n} of averaged projection hat-matrices.}
 }
 }
 \description{
 Implements Bayesian variable selection using the hierarchical Horseshoe prior
-across multiply-imputed datasets.  This model applies global–local shrinkage
+across multiply-imputed datasets.  This model applies global-local shrinkage
 to regression coefficients via a global scale (\code{tau2}), local scales
 (\code{lambda2}), and auxiliary hyperpriors (\code{kappa}, \code{eta}).
+The Gibbs sampler is implemented in C++ (RcppArmadillo).
 }
 \examples{
 sim <- sim_B(n = 100, p = 20, type = "MAR", SNP = 1.5, corr = 0.5,

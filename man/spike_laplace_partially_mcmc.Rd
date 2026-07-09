@@ -55,14 +55,22 @@ A named list with components:
 \item{\code{post_fitted_Y}}{Array \code{npost * D * n} of posterior predictive draws (including noise).}
 \item{\code{post_pool_beta}}{Matrix \code{(npost * D) * p} of pooled coefficient draws.}
 \item{\code{post_pool_fitted_Y}}{Matrix \code{(npost * D) * n} of pooled predictive draws (with noise).}
-\item{\code{hat_matrix_proj}}{Matrix \code{D * n * n} of averaged projection hat-matrices. To avoid recalculate for estimating degree of freedom.}
+\item{\code{hat_matrix_proj}}{Array \code{D * n * n} of averaged projection hat-matrices.}
 \item{\code{a}, \code{b}}{Numeric values of the rho hyperparameters used.}
 }
 }
 \description{
-Implements Bayesian variable selection using a spike-and-slab prior with a Laplace (double-exponential) slab
-on nonzero coefficients. Latent inclusion indicators \code{gamma} follow Bernoulli(\code{theta}), and their probabilities
-follow independent Beta(\code{a}, \code{b}) priors.
+Implements Bayesian variable selection using a spike-and-slab prior with a
+Laplace (double-exponential) slab on nonzero coefficients. Latent inclusion
+indicators \code{gamma} follow Bernoulli(\code{theta}), and their
+probabilities follow independent Beta(\code{a}, \code{b}) priors. A
+partially-collapsed Gibbs sampler is used, implemented in C++
+(RcppArmadillo).
+}
+\note{
+The partially-collapsed Gibbs update of the inclusion indicators uses a
+rank-1 Woodbury / matrix-determinant update, ported from the reference R
+implementation by Jungang Zou, 2024-2026.
 }
 \examples{
 sim <- sim_B(n = 100, p = 20, type = "MAR", SNP = 1.5, corr = 0.5,

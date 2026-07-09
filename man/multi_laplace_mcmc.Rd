@@ -53,7 +53,7 @@ A named \code{list} with elements:
 \item{\code{post_fitted_Y}}{Array \code{npost × D × n} of posterior predictive draws (with noise).}
 \item{\code{post_pool_beta}}{Matrix \code{(npost * D) × p} of pooled coefficient draws.}
 \item{\code{post_pool_fitted_Y}}{Matrix \code{(npost * D) × n} of pooled predictive draws (with noise).}
-\item{\code{hat_matrix_proj}}{Matrix \code{D × n × n} of averaged projection hat-matrices. To avoid recalculate for estimating degree of freedom.}
+\item{\code{hat_matrix_proj}}{Array \code{D × n × n} of averaged projection hat-matrices.}
 \item{\code{h}, \code{v}}{Numeric; the shape and scale hyperparameters used.}
 }
 }
@@ -62,6 +62,7 @@ Implements Bayesian variable selection under the Multi-Laplace prior on
 regression coefficients across multiply-imputed datasets.  The prior shares
 local shrinkage parameters (\code{lambda2}) across imputations and places
 a Gamma(\code{h}, \code{v}) hyperprior on the global parameter \code{rho}.
+The Gibbs sampler is implemented in C++ (RcppArmadillo).
 }
 \examples{
 sim <- sim_B(n = 100, p = 20, type = "MAR", SNP = 1.5, corr = 0.5, low_missing = TRUE,

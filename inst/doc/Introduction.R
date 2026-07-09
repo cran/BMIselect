@@ -69,6 +69,14 @@ bmilasso_ML <- BMI_LASSO(data$data_MI$X, data$data_MI$Y, model = "Multi_Laplace"
 #                  nburn = 4000, npost = 4000, seed = seed, a = 10, b = 1)
 
 ## -----------------------------------------------------------------------------
+# run 2 chains using 2 cores in series
+start = Sys.time()
+bmilasso_series <- BMI_LASSO(data$data_MI$X, data$data_MI$Y, model = "Horseshoe",
+                 nburn = 4000, npost = 4000, output_verbose = FALSE, nchains = 2, seed = seed)
+end = Sys.time()
+print(paste("The running time for two chains in series:", difftime(end, start, units = "mins"), "mins"))
+
+
 # run 2 chains using 2 cores in parallel
 start = Sys.time()
 bmilasso_parallel <- BMI_LASSO(data$data_MI$X, data$data_MI$Y, model = "Horseshoe",
