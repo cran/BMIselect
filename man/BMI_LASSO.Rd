@@ -9,16 +9,18 @@ BMI_LASSO(
   Y,
   model,
   standardize = TRUE,
-  SNC = TRUE,
+  search = "grid",
   grid = seq(0, 1, 0.01),
   orthogonal = FALSE,
-  nburn = 4000,
-  npost = 4000,
+  nburn = 5000,
+  npost = 5000,
   seed = NULL,
   nchains = 1,
   ncores = 1,
   output_verbose = TRUE,
   printevery = 1000,
+  selection_set = NULL,
+  criterion = "bic",
   ...
 )
 }
@@ -37,20 +39,31 @@ is the response for one imputation.}
 \item{standardize}{Logical; whether to normalize each \code{X} and centralize
 \code{Y} within each imputation before fitting.  Default \code{TRUE}.}
 
-\item{SNC}{Logical; if \code{TRUE}, use scaled neighborhood criterion;
-otherwise apply thresholding or median‐based selection. Default \code{TRUE}.}
+\item{search}{Character; how the candidate submodels along the path are
+generated. \code{"grid"} (default) applies a per-coefficient marginal rule
+over \code{grid}: for the shrinkage priors (\code{"Multi_Laplace"},
+\code{"Horseshoe"}, \code{"ARD"}) the symmetric credible interval that
+excludes 0, and for \code{"Spike_Laplace"} the posterior inclusion
+probability \eqn{p_j = \Pr(\gamma_j = 1 \mid y)} at or above the grid value
+(\code{0.5} gives the Barbieri & Berger (2004) median-probability model).
+\code{"snc"} uses the scaled-neighborhood criterion over \code{grid}.
+\code{"forward"} builds a nested path by forward stepwise search on the
+single-point projection loss (Piironen et al. 2020, Sec. 4).}
 
-\item{grid}{Numeric vector; grid of scaled neighborhood criterion (or thresholding) to explore.
-Default \code{seq(0,1,0.01)}.}
+\item{grid}{Numeric vector; thresholds explored by the \code{"grid"} and
+\code{"snc"} searches (ignored by \code{"forward"}). Default \code{seq(0,1,0.01)}.}
 
 \item{orthogonal}{Logical; if \code{TRUE}, using orthogonal approximations for
 degrees‐of‐freedom estimations.  Default \code{FALSE}.}
 
-\item{nburn}{Integer; number of burn-in MCMC iterations per chain. Default \code{4000}.}
+\item{nburn}{Integer; number of burn-in MCMC iterations per chain. Default \code{5000}.}
 
-\item{npost}{Integer; number of post-burn-in samples to retain per chain. Default \code{4000}.}
+\item{npost}{Integer; number of post-burn-in samples to retain per chain. Default \code{5000}.}
 
-\item{seed}{Optional integer; base random seed.  Each chain adds its index.}
+\item{seed}{Optional integer; base random seed.  Each chain adds its index.  When
+supplied, BLAS is pinned to a single thread for the duration of the fit so results
+are bit-reproducible (multithreaded BLAS otherwise makes the MCMC draws, and hence
+the selection, non-deterministic).}
 
 \item{nchains}{Integer; number of MCMC chains to run in parallel. Default \code{1}.}
 
@@ -59,6 +72,19 @@ degrees‐of‐freedom estimations.  Default \code{FALSE}.}
 \item{output_verbose}{Logical; print progress messages. Default \code{TRUE}.}
 
 \item{printevery}{Integer; print status every so many iterations. Default \code{1000}.}
+
+\item{selection_set}{Optional logical vector of length \code{p}.  If supplied, the
+four-step candidate-generation + BIC search is bypassed and the fitted posterior
+is projected and calibrated directly onto this fixed set (\code{bic_models} is then
+\code{NULL}).  Useful for post-selection inference under a pre-specified (e.g. the
+true) model.  At most \code{n - 2} variables may be selected (to keep the projection
+full rank and leave a residual degree of freedom for \eqn{\sigma^2}).  Default
+\code{NULL} (run the search).}
+
+\item{criterion}{Character; model-size selection criterion along the candidate
+path. \code{"bic"} (default) uses the modified BIC; \code{"loo"} uses
+subject-level PSIS-LOO expected log predictive density (Piironen et al. 2020,
+Sec. 5.2) and selects the elpd-maximising subset.}
 
 \item{\dots}{Additional model-specific hyperparameters:
 \itemize{
@@ -78,10 +104,21 @@ selection (by BIC) for each chain.}
 posterior draws for the best submodel.}
 \item{\code{bic_models}}{List of length \code{nchains} of BIC values and
 degrees-of-freedom for each candidate submodel.}
+\item{\code{loo_models}}{(\code{criterion = "loo"}) List of length
+\code{nchains}, each with the elpd path, max Pareto-k per candidate, and the
+elpd-maximising index; \code{NULL} otherwise.}
 \item{\code{summary_table_full}}{A data frame summarizing rank-normalized
 split-Rhat and other diagnostics for the full model.}
 \item{\code{summary_table_selected}}{A data frame summarizing diagnostics
 for the selected submodel after projection.}
+\item{\code{pooled}}{(\code{nchains > 1} only; \code{NULL} otherwise) The
+multi-chain \emph{pooled} four-step selection: all chains' draws are pooled
+and selected ONCE, so the chains yield a single coherent submodel rather than
+one selection per chain.  A list with \code{best_select}, \code{select},
+\code{bic_models} / \code{loo_models}, \code{posterior_best_models}
+(calibrated + projected draws), and \code{summary_table_selected} (pooled
+mean and 95\\% interval per coefficient).  The per-chain outputs above are
+unchanged.}
 }
 }
 \description{

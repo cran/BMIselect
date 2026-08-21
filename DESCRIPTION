@@ -1,7 +1,7 @@
 Package: BMIselect
 Title: Bayesian MI-LASSO for Variable Selection on Multiply-Imputed
         Datasets
-Version: 1.0.4
+Version: 1.0.9
 Authors@R: 
     c(person("Jungang", "Zou", email = "jungang.zou@gmail.com", role = c("aut", "cre")),
     person(given = "Sijian",
@@ -19,14 +19,14 @@ Encoding: UTF-8
 RoxygenNote: 7.3.3
 Depends: R (>= 3.5.0)
 Imports: Rcpp, MASS, Rfast, foreach, doParallel, arm, mice, abind,
-        stringr, stats, posterior
+        stringr, stats, posterior, loo
 LinkingTo: Rcpp, RcppArmadillo
 Suggests: testthat, knitr, rmarkdown
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2026-07-09 01:58:06 UTC; jz3138
+Packaged: 2026-08-21 19:36:54 UTC; jz3183
 Author: Jungang Zou [aut, cre],
   Sijian Wang [aut],
   Qixuan Chen [aut]
 Repository: CRAN
-Date/Publication: 2026-07-09 10:20:22 UTC
+Date/Publication: 2026-08-21 22:02:04 UTC

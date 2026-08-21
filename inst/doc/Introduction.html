@@ -12,7 +12,7 @@
 
 <meta name="author" content="Jungang Zou" />
 
-<meta name="date" content="2026-07-08" />
+<meta name="date" content="2026-08-21" />
 
 <title>An Introduction to BMIselect</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">An Introduction to BMIselect</h1>
 <h4 class="author">Jungang Zou</h4>
-<h4 class="date">2026-07-08</h4>
+<h4 class="date">2026-08-21</h4>
 
 
 
@@ -364,6 +364,24 @@ methods and reporting the post-selection inference.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(BMIselect)</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>seed <span class="ot">=</span> <span class="dv">12345</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">set.seed</span>(seed)</span></code></pre></div>
+</div>
+<div id="limitations" class="section level2">
+<h2>Limitations</h2>
+<p>Here are some limitations about this package:</p>
+<ol style="list-style-type: decimal">
+<li>Currently, our package only supports continuous outcomes. Binary,
+categorical and ordinal outcomes are our research topic in the
+future.</li>
+<li>We support continuous and binary covariates. Selection for
+categorical covariates is tricky. Generally we transform a categorical
+variable into a set of binary dummy variables. Our package supports the
+selection on each dummy variable. For selection of the whole group, we
+will research it in the future.</li>
+<li>Similarly to other variable selection methods, our models are
+sensitive to multicollinearity. If some covariates are highly
+correlated, we suggest to do some pre-processing before using our
+methods.</li>
+</ol>
 </div>
 <div id="data-preparation" class="section level2">
 <h2>Data Preparation</h2>
@@ -394,14 +412,15 @@ vector <code>beta</code>.</p>
 <span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>)</span>
 <span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a></span>
 <span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="fu">str</span>(data, <span class="at">max.level =</span> <span class="dv">1</span>)</span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; List of 7</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; List of 8</span></span>
 <span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt;  $ data_O   :List of 2</span></span>
 <span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt;  $ data_mis :List of 2</span></span>
 <span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt;  $ data_MI  :List of 2</span></span>
 <span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt;  $ data_CC  :List of 2</span></span>
 <span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt;  $ important: logi [1:20] TRUE TRUE FALSE FALSE TRUE FALSE ...</span></span>
 <span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt;  $ covmat   : num [1:20, 1:20] 1 0 0 0 0 0 0 0 0 0 ...</span></span>
-<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt;  $ beta     : num [1:20] 1 1 0 0 1 0 0 0 0 0 ...</span></span></code></pre></div>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt;  $ beta     : num [1:20] 1 1 0 0 1 0 0 0 0 0 ...</span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt;  $ sigma2   : num [1, 1] 4</span></span></code></pre></div>
 <p>In this vignette, we focus on variable selection on the
 multiply-imputed set <code>data_MI</code>. The dataset contains a
 three-dimensional multiply-imputed covariates <code>data_MI$X</code> and
@@ -454,7 +473,8 @@ threshold is 0, and keeping all variables when the threshold is 1.</li>
 approximate the full model as closely as possible.</li>
 <li>Evaluate each submodel using the Bayesian Information Criterion
 (BIC). Select the optimal submodel based on the smallest BIC value.</li>
-<li>Report the post-selection estimates from the optimal submodel.</li>
+<li>Report the calibrated post-selection estimates from the optimal
+submodel.</li>
 </ol>
 <p>See Zou, J., Wang, S. and Chen, Q. (2025), Bayesian MI-LASSO for
 Variable Selection on Multiply-Imputed Data. ArXiv, 2211.00114. <a href="doi:10.48550/arXiv.2211.00114" class="uri">doi:10.48550/arXiv.2211.00114</a> for more details.</p>
@@ -472,24 +492,31 @@ Variable Selection on Multiply-Imputed Data. ArXiv, 2211.00114. <a href="doi:10.
 <span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt; Chain 1: 6000/8000, sampling</span></span>
 <span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; Chain 1: 7000/8000, sampling</span></span>
 <span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; Chain 1: 8000/8000, sampling</span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; Max per-imputation rank-normalized split-Rhat (full model) = 1.020</span></span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; Max per-imputation rank-normalized split-Rhat (selected model) = 1.001</span></span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; Running time for 1 chain: 0.05 minutes</span></span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a></span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="fu">str</span>(bmilasso, <span class="at">max.level =</span> <span class="dv">1</span>)</span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt; List of 7</span></span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt;  $ posterior             :List of 14</span></span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt;  $ select                : logi [1:8, 1:20] FALSE TRUE TRUE TRUE TRUE TRUE ...</span></span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt;  $ best_select           : logi [1, 1:20] TRUE TRUE FALSE FALSE TRUE FALSE ...</span></span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt;  $ posterior_best_models :List of 8</span></span>
-<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt;  $ bic_models            : num [1:2, 1:8] 2.52 0 1.62 28.55 1.63 ...</span></span>
-<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
-<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt;  $ summary_table_full    : drws_smm [22 × 10] (S3: draws_summary/tbl_df/tbl/data.frame)</span></span>
-<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;num_args&quot;)= list()</span></span>
-<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt;  $ summary_table_selected: drws_smm [22 × 10] (S3: draws_summary/tbl_df/tbl/data.frame)</span></span>
-<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;num_args&quot;)= list()</span></span></code></pre></div>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; Max rank-normalized split-Rhat (full model) = 1.005</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; Max rank-normalized split-Rhat (selected model) = 1.000</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; Max rank-normalized split-Rhat (selected model, projected) = 1.000</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; Running time for 1 chain: 0.06 min total (full-model MCMC 0.01 + four-step selection 0.05)</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="fu">str</span>(bmilasso, <span class="at">max.level =</span> <span class="dv">1</span>)</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; List of 11</span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt;  $ posterior                       :List of 14</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt;  $ select                          : logi [1:15, 1:20] TRUE TRUE TRUE TRUE TRUE TRUE ...</span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt;  $ best_select                     : logi [1, 1:20] TRUE TRUE FALSE FALSE TRUE FALSE ...</span></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt;  $ posterior_best_models           :List of 16</span></span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt;  $ bic_models                      : num [1:2, 1:15] 1.74 42.34 1.73 41.87 1.72 ...</span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt;  $ loo_models                      : NULL</span></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt;  $ summary_table_full              : drws_smm [22 × 10] (S3: draws_summary/tbl_df/tbl/data.frame)</span></span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;num_args&quot;)= list()</span></span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt;  $ summary_table_selected          : drws_smm [22 × 10] (S3: draws_summary/tbl_df/tbl/data.frame)</span></span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;num_args&quot;)= list()</span></span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt;  $ summary_table_selected_projected: drws_smm [22 × 10] (S3: draws_summary/tbl_df/tbl/data.frame)</span></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;num_args&quot;)= list()</span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt;  $ runtime                         : Named num [1:3] 0.05803 0.00944 0.04858</span></span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;names&quot;)= chr [1:3] &quot;total&quot; &quot;mcmc&quot; &quot;selection&quot;</span></span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="co">#&gt;  $ pooled                          : NULL</span></span></code></pre></div>
 <p>The returned object is a list, containing posterior draws, selected
 model, BIC for all submodels, and some summary tables. We first take a
 look at the three important objects: <code>best_select</code>,
@@ -517,40 +544,48 @@ the posterior estimates for the optimal (sub)model. If the parameter
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># selection vector of optimal (sub)model</span></span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>bmilasso<span class="sc">$</span>best_select</span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt;      [,1] [,2]  [,3]  [,4] [,5]  [,6]  [,7]  [,8]  [,9] [,10] [,11] [,12] [,13]</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; 0.01 TRUE TRUE FALSE FALSE TRUE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE FALSE</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; 0.89 TRUE TRUE FALSE FALSE TRUE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE FALSE</span></span>
 <span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt;      [,14] [,15] [,16] [,17] [,18] [,19] [,20]</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; 0.01 FALSE  TRUE FALSE FALSE FALSE FALSE FALSE</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; 0.89 FALSE  TRUE FALSE FALSE FALSE FALSE FALSE</span></span>
 <span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a></span>
 <span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a></span>
 <span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co"># posterior draws of coefficients, intercept and regression variance for the optimal (sub)model</span></span>
 <span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="fu">str</span>(bmilasso<span class="sc">$</span>posterior_best_models)</span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; List of 8</span></span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt;  $ post_sigma2            : num [1:4000] 3.63 4.21 3.6 3.52 3.49 ...</span></span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co">#&gt;  $ post_beta              : num [1:4000, 1:5, 1:20] 1.111 1.074 1.222 1.321 0.986 ...</span></span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_beta         : num [1:20000, 1:20] 1.111 1.074 1.222 1.321 0.986 ...</span></span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="co">#&gt;  $ post_alpha             : NULL</span></span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_alpha        : num(0) </span></span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="co">#&gt;  $ post_beta_original     : num [1:4000, 1:5, 1:20] 1.101 1.064 1.211 1.309 0.977 ...</span></span>
-<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_beta_original: num [1:20000, 1:20] 1.101 1.064 1.211 1.309 0.977 ...</span></span>
-<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="co">#&gt;  $ post_alpha_original    : num [1:4000, 1:5] -0.23 -0.336 -0.305 -0.257 -0.279 ...</span></span>
-<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a></span>
-<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a></span>
-<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co"># the summary table of post-selection inference</span></span>
-<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>bmilasso<span class="sc">$</span>summary_table_selected</span>
-<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="co">#&gt; # A tibble: 22 × 10</span></span>
-<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a><span class="co">#&gt;    variable      mean median     sd    mad     q5    q95  rhat ess_bulk ess_tail</span></span>
-<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;        &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;</span></span>
-<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a><span class="co">#&gt;  1 intercept_… -0.240 -0.245 0.0738 0.0816 -0.353 -0.118  1.00    3637.    3461.</span></span>
-<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a><span class="co">#&gt;  2 beta_pool[…  1.12   1.12  0.199  0.200   0.797  1.45   1.00    3694.    3441.</span></span>
-<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a><span class="co">#&gt;  3 beta_pool[…  0.709  0.709 0.201  0.202   0.383  1.04   1.00    3218.    3492.</span></span>
-<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a><span class="co">#&gt;  4 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a><span class="co">#&gt;  5 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a><span class="co">#&gt;  6 beta_pool[…  0.851  0.852 0.187  0.186   0.544  1.16   1.00    3487.    3651.</span></span>
-<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="co">#&gt;  7 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a><span class="co">#&gt;  8 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a><span class="co">#&gt;  9 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a><span class="co">#&gt; 10 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="co">#&gt; # ℹ 12 more rows</span></span></code></pre></div>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; List of 16</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt;  $ post_sigma2                      : num [1:4000] 3.99 3.49 3.35 3.74 3.83 ...</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co">#&gt;  $ post_beta                        : num [1:4000, 1:5, 1:20] 1.042 1.13 1.104 0.973 1.07 ...</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_beta                   : num [1:20000, 1:20] 1.042 1.13 1.104 0.973 1.07 ...</span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="co">#&gt;  $ post_alpha                       : NULL</span></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_alpha                  : num(0) </span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="co">#&gt;  $ post_sigma2_projected            : num [1:4000] 3.99 3.49 3.35 3.74 3.82 ...</span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="co">#&gt;  $ post_beta_projected              : num [1:4000, 1:5, 1:20] 1.043 1.128 1.102 0.976 1.07 ...</span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_beta_projected         : num [1:20000, 1:20] 1.043 1.128 1.102 0.976 1.07 ...</span></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="co">#&gt;  $ post_alpha_projected             : NULL</span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_alpha_projected        : num(0) </span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co">#&gt;  $ post_beta_original               : num [1:4000, 1:5, 1:20] 1.033 1.12 1.095 0.965 1.06 ...</span></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_beta_original          : num [1:20000, 1:20] 1.033 1.12 1.095 0.965 1.06 ...</span></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="co">#&gt;  $ post_beta_original_projected     : num [1:4000, 1:5, 1:20] 1.034 1.118 1.092 0.968 1.06 ...</span></span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_beta_original_projected: num [1:20000, 1:20] 1.034 1.118 1.092 0.968 1.06 ...</span></span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a><span class="co">#&gt;  $ post_alpha_original              : num [1:4000, 1:5] -0.327 -0.307 -0.317 -0.287 -0.265 ...</span></span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a><span class="co">#&gt;  $ post_alpha_original_projected    : num [1:4000, 1:5] -0.326 -0.306 -0.316 -0.288 -0.266 ...</span></span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a></span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a></span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a><span class="co"># the summary table of post-selection inference</span></span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>bmilasso<span class="sc">$</span>summary_table_selected</span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a><span class="co">#&gt; # A tibble: 22 × 10</span></span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="co">#&gt;    variable   mean median     sd    mad     q5    q95   rhat ess_bulk ess_tail</span></span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;     &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;</span></span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a><span class="co">#&gt;  1 rv       -0.261 -0.266 0.0738 0.0802 -0.377 -0.139  1.000   15105.   19351.</span></span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a><span class="co">#&gt;  2 rv[1]     1.12   1.12  0.205  0.206   0.790  1.46   1.00    19109.   19311.</span></span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="co">#&gt;  3 rv[2]     0.709  0.707 0.211  0.210   0.362  1.06   1.000   18441.   17035.</span></span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a><span class="co">#&gt;  4 rv[3]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a><span class="co">#&gt;  5 rv[4]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a><span class="co">#&gt;  6 rv[5]     0.847  0.848 0.193  0.192   0.532  1.17   1.00    19154.   19477.</span></span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a><span class="co">#&gt;  7 rv[6]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="co">#&gt;  8 rv[7]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a><span class="co">#&gt;  9 rv[8]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a><span class="co">#&gt; 10 rv[9]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a><span class="co">#&gt; # ℹ 12 more rows</span></span></code></pre></div>
 <p>If some researchers are interested in the collections of candidate
 submodels and their selection vectors/BIC, the objects
 <code>select</code> and <code>bic_models</code> contain the
@@ -564,34 +599,51 @@ freedom. Each column is a submodel.</li>
 </ul>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># selection matrix of all (sub)models</span></span>
 <span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>bmilasso<span class="sc">$</span>select</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt;       [,1]  [,2]  [,3]  [,4]  [,5]  [,6]  [,7]  [,8]  [,9] [,10] [,11] [,12]</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; 0    FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE</span></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; 0.01  TRUE  TRUE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt; 0.35  TRUE  TRUE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE</span></span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; 0.75  TRUE  TRUE FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE</span></span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; 0.77  TRUE  TRUE FALSE FALSE  TRUE  TRUE FALSE  TRUE FALSE FALSE  TRUE  TRUE</span></span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; 0.78  TRUE  TRUE FALSE  TRUE  TRUE  TRUE FALSE  TRUE FALSE  TRUE  TRUE  TRUE</span></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; 0.79  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; 0.8   TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt;      [,13] [,14] [,15] [,16] [,17] [,18] [,19] [,20]</span></span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; 0    FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE</span></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; 0.01 FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE</span></span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; 0.35 FALSE FALSE  TRUE FALSE FALSE FALSE  TRUE FALSE</span></span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt; 0.75 FALSE  TRUE  TRUE FALSE FALSE FALSE  TRUE FALSE</span></span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt; 0.77 FALSE  TRUE  TRUE FALSE  TRUE  TRUE  TRUE FALSE</span></span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt; 0.78 FALSE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE FALSE</span></span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt; 0.79 FALSE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
-<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; 0.8   TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a></span>
-<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a></span>
-<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co"># BICs and degrees of freedom</span></span>
-<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>bmilasso<span class="sc">$</span>bic_models</span>
-<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt;            0      0.01      0.35      0.75      0.77      0.78      0.79</span></span>
-<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; BIC 2.518341  1.624661  1.631505  1.642718  1.678766  1.702623  1.732629</span></span>
-<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt; df  0.000000 28.547570 31.902876 33.164817 37.106808 39.526045 42.043581</span></span>
-<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt;           0.8</span></span>
-<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt; BIC  1.737993</span></span>
-<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt; df  42.512904</span></span></code></pre></div>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt;      [,1]  [,2]  [,3]  [,4] [,5]  [,6]  [,7]  [,8]  [,9] [,10] [,11] [,12]</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; 0    TRUE  TRUE  TRUE  TRUE TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; 0.01 TRUE  TRUE  TRUE  TRUE TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt; 0.04 TRUE  TRUE  TRUE  TRUE TRUE  TRUE FALSE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; 0.05 TRUE  TRUE FALSE  TRUE TRUE  TRUE FALSE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; 0.07 TRUE  TRUE FALSE  TRUE TRUE  TRUE FALSE  TRUE FALSE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; 0.08 TRUE  TRUE FALSE  TRUE TRUE  TRUE FALSE  TRUE FALSE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; 0.12 TRUE  TRUE FALSE FALSE TRUE  TRUE FALSE  TRUE FALSE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; 0.14 TRUE  TRUE FALSE FALSE TRUE  TRUE FALSE  TRUE FALSE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; 0.21 TRUE  TRUE FALSE FALSE TRUE  TRUE FALSE FALSE FALSE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; 0.23 TRUE  TRUE FALSE FALSE TRUE FALSE FALSE FALSE FALSE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; 0.24 TRUE  TRUE FALSE FALSE TRUE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE</span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; 0.26 TRUE  TRUE FALSE FALSE TRUE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE</span></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt; 0.34 TRUE  TRUE FALSE FALSE TRUE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt; 0.89 TRUE  TRUE FALSE FALSE TRUE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE</span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt; 1    TRUE FALSE FALSE FALSE TRUE FALSE FALSE FALSE FALSE FALSE FALSE  TRUE</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt;      [,13] [,14] [,15] [,16] [,17] [,18] [,19] [,20]</span></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; 0     TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; 0.01 FALSE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; 0.04 FALSE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt; 0.05 FALSE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt; 0.07 FALSE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; 0.08 FALSE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE FALSE</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; 0.12 FALSE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE FALSE</span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt; 0.14 FALSE  TRUE  TRUE FALSE  TRUE  TRUE  TRUE FALSE</span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt; 0.21 FALSE  TRUE  TRUE FALSE  TRUE  TRUE  TRUE FALSE</span></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt; 0.23 FALSE  TRUE  TRUE FALSE FALSE  TRUE  TRUE FALSE</span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt; 0.24 FALSE  TRUE  TRUE FALSE FALSE  TRUE  TRUE FALSE</span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt; 0.26 FALSE  TRUE  TRUE FALSE FALSE FALSE  TRUE FALSE</span></span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt; 0.34 FALSE FALSE  TRUE FALSE FALSE FALSE  TRUE FALSE</span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt; 0.89 FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE</span></span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a><span class="co">#&gt; 1    FALSE FALSE  TRUE FALSE FALSE FALSE FALSE FALSE</span></span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a></span>
+<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a></span>
+<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co"># BICs and degrees of freedom</span></span>
+<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a>bmilasso<span class="sc">$</span>bic_models</span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;            0      0.01      0.04      0.05      0.07      0.08      0.12</span></span>
+<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="co">#&gt; BIC  1.73597  1.730638  1.723572  1.716315  1.708661  1.701279  1.693803</span></span>
+<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="co">#&gt; df  42.33777 41.868515 41.282832 40.663695 40.024939 39.403489 38.722026</span></span>
+<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a><span class="co">#&gt;          0.14      0.21      0.23      0.24      0.26     0.34     0.89</span></span>
+<span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="co">#&gt; BIC  1.686256  1.678382  1.661442  1.651782  1.643474  1.63223  1.62476</span></span>
+<span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt; df  37.990178 37.164898 35.410632 34.388499 33.267045 31.99933 28.55337</span></span>
+<span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="co">#&gt;            1</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt; BIC  1.81054</span></span>
+<span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a><span class="co">#&gt; df  19.33382</span></span></code></pre></div>
 <p>In some cases, if users want to test the robustness of each prior,
 the Bayesian group LASSO model fitted from the first stage (before the
 projection predictive variable selection procedure) is needed. Users can
@@ -602,37 +654,37 @@ some hierarchical parameters are also included in
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># posterior draws of parameters of fitted full model in the first stage (before projection predictive variable selection procedure)</span></span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">str</span>(bmilasso<span class="sc">$</span>posterior)</span>
 <span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; List of 14</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt;  $ post_beta              : num [1:4000, 1:5, 1:20] 1.097 1.093 1.176 1.23 0.933 ...</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt;  $ post_fitted_Y          : num [1:4000, 1:5, 1:100] -2.29 -1.63 -3.58 -1.37 -2.47 ...</span></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_beta         : num [1:20000, 1:20] 1.097 1.093 1.176 1.23 0.933 ...</span></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_fitted_Y     : num [1:20000, 1:100] -2.29 -1.63 -3.58 -1.37 -2.47 ...</span></span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt;  $ hat_matrix_proj        : num [1:5, 1:100, 1:100] 0.0789 0.0851 0.0861 0.081 0.1046 ...</span></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt;  $ post_lambda2           : num [1:4000, 1:20] 103.9 286.4 145.6 85.7 190.9 ...</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt;  $ post_kappa             : num [1:4000, 1:20] 0.525 8.548 0.433 1.146 0.683 ...</span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt;  $ post_tau2              : num [1:4000] 0.00211 0.00228 0.00191 0.00246 0.00175 ...</span></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt;  $ post_eta               : num [1:4000] 612 2122 297 325 353 ...</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt;  $ post_beta              : num [1:4000, 1:5, 1:20] 1.04 1.11 1.107 0.974 1.063 ...</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt;  $ post_fitted_Y          : num [1:4000, 1:5, 1:100] -1.628 0.345 -2.772 -3.489 -1.856 ...</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_beta         : num [1:20000, 1:20] 1.04 1.11 1.107 0.974 1.063 ...</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_fitted_Y     : num [1:20000, 1:100] -1.628 0.345 -2.772 -3.489 -1.856 ...</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt;  $ hat_matrix_proj        : num [1:5, 1:100, 1:100] 0.0784 0.0847 0.0857 0.0807 0.1042 ...</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt;  $ post_lambda2           : num [1:4000, 1:20] 64.2 155.9 102.9 13.6 67.7 ...</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt;  $ post_kappa             : num [1:4000, 1:20] 0.704 4.777 2.297 1.789 0.3 ...</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt;  $ post_tau2              : num [1:4000] 0.00677 0.00832 0.00919 0.01122 0.01052 ...</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt;  $ post_eta               : num [1:4000] 498.6 161.1 68.3 66.6 45.9 ...</span></span>
 <span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt;  $ post_alpha             : num [1:4000, 1:5] 0 0 0 0 0 0 0 0 0 0 ...</span></span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt;  $ post_sigma2            : num [1:4000] 3.43 3.99 3.42 3.29 3.38 ...</span></span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt;  $ post_beta_original     : num [1:4000, 1:5, 1:20] 1.088 1.083 1.166 1.22 0.925 ...</span></span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_beta_original: num [1:20000, 1:20] 1.088 1.083 1.166 1.22 0.925 ...</span></span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt;  $ post_alpha_original    : num [1:4000, 1:5] -0.234 -0.451 -0.327 -0.384 -0.383 ...</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt;  $ post_sigma2            : num [1:4000] 3.77 3.3 3.09 3.59 3.61 ...</span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt;  $ post_beta_original     : num [1:4000, 1:5, 1:20] 1.031 1.101 1.097 0.965 1.054 ...</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt;  $ post_pool_beta_original: num [1:20000, 1:20] 1.031 1.101 1.097 0.965 1.054 ...</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt;  $ post_alpha_original    : num [1:4000, 1:5] -0.333 -0.336 -0.354 -0.372 -0.295 ...</span></span>
 <span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a></span>
 <span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a></span>
 <span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="co"># the summary table of coefficients, intercept, and regression variance from the fitted full model</span></span>
 <span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>bmilasso<span class="sc">$</span>summary_table_full</span>
 <span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="co">#&gt; # A tibble: 22 × 10</span></span>
-<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="co">#&gt;    variable           mean    median     sd    mad      q5    q95  rhat ess_bulk</span></span>
-<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;             &lt;dbl&gt;     &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;</span></span>
-<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co">#&gt;  1 intercept_pool -0.269   -0.271    0.0880 0.0907 -0.412  -0.123  1.00    1903.</span></span>
-<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="co">#&gt;  2 beta_pool[1]    1.09     1.09     0.203  0.203   0.756   1.42   1.00    3485.</span></span>
-<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="co">#&gt;  3 beta_pool[2]    0.742    0.742    0.207  0.208   0.403   1.08   1.00    3062.</span></span>
-<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="co">#&gt;  4 beta_pool[3]   -0.00588 -0.00146  0.0721 0.0382 -0.128   0.105  1.00    2642.</span></span>
-<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="co">#&gt;  5 beta_pool[4]    0.0152   0.00429  0.0826 0.0475 -0.104   0.165  1.00    2842.</span></span>
-<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a><span class="co">#&gt;  6 beta_pool[5]    0.883    0.883    0.189  0.189   0.572   1.20   1.00    3172.</span></span>
-<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="co">#&gt;  7 beta_pool[6]    0.0296   0.0105   0.0915 0.0547 -0.0950  0.204  1.00    1264.</span></span>
-<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a><span class="co">#&gt;  8 beta_pool[7]   -0.00406 -0.000968 0.0796 0.0460 -0.139   0.120  1.01    3439.</span></span>
-<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a><span class="co">#&gt;  9 beta_pool[8]   -0.0283  -0.0107   0.0942 0.0584 -0.205   0.101  1.00    2024.</span></span>
-<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a><span class="co">#&gt; 10 beta_pool[9]   -0.00544 -0.000912 0.0713 0.0378 -0.128   0.105  1.00    3282.</span></span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="co">#&gt;    variable     mean    median     sd    mad      q5     q95  rhat ess_bulk</span></span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;</span></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co">#&gt;  1 rv       -0.288   -0.290    0.0857 0.0889 -0.428  -0.146  1.00    15524.</span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="co">#&gt;  2 rv[1]     1.09     1.09     0.201  0.200   0.763   1.42   1.000   18970.</span></span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="co">#&gt;  3 rv[2]     0.743    0.740    0.206  0.205   0.403   1.08   1.000   18060.</span></span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="co">#&gt;  4 rv[3]    -0.00506 -0.000814 0.0714 0.0410 -0.127   0.107  1.00    20021.</span></span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="co">#&gt;  5 rv[4]     0.0150   0.00365  0.0845 0.0484 -0.107   0.167  1.00    14175.</span></span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a><span class="co">#&gt;  6 rv[5]     0.878    0.877    0.190  0.189   0.568   1.19   1.00    18652.</span></span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="co">#&gt;  7 rv[6]     0.0282   0.00945  0.0882 0.0525 -0.0905  0.196  1.00     9904.</span></span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a><span class="co">#&gt;  8 rv[7]    -0.00301 -0.000435 0.0737 0.0395 -0.126   0.112  1.000   20085.</span></span>
+<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a><span class="co">#&gt;  9 rv[8]    -0.0263  -0.00801  0.0913 0.0511 -0.198   0.0964 1.00     9467.</span></span>
+<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a><span class="co">#&gt; 10 rv[9]    -0.00681 -0.00157  0.0729 0.0408 -0.131   0.104  1.00    18116.</span></span>
 <span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a><span class="co">#&gt; # ℹ 12 more rows</span></span>
 <span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a><span class="co">#&gt; # ℹ 1 more variable: ess_tail &lt;dbl&gt;</span></span></code></pre></div>
 </div>
@@ -664,14 +716,15 @@ respectively:</p>
 <span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt; Chain 1: 6000/8000, sampling</span></span>
 <span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co">#&gt; Chain 1: 7000/8000, sampling</span></span>
 <span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; Chain 1: 8000/8000, sampling</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt; Max per-imputation rank-normalized split-Rhat (full model) = 1.002</span></span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; Max per-imputation rank-normalized split-Rhat (selected model) = 1.001</span></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; Running time for 1 chain: 0.05 minutes</span></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt; Max rank-normalized split-Rhat (full model) = 1.000</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; Max rank-normalized split-Rhat (selected model) = 1.000</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; Max rank-normalized split-Rhat (selected model, projected) = 1.000</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; Running time for 1 chain: 0.05 min total (full-model MCMC 0.01 + four-step selection 0.04)</span></span>
 <span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a></span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="co"># specify hyperparameters for Spike-Laplace model. To save time, we give an example without running</span></span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co"># bmilasso_SL &lt;- BMI_LASSO(data$data_MI$X, data$data_MI$Y, model = &quot;Spike_Laplace&quot;,</span></span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co">#                  nburn = 4000, npost = 4000, seed = seed, a = 10, b = 1)</span></span></code></pre></div>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a></span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co"># specify hyperparameters for Spike-Laplace model. To save time, we give an example without running</span></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co"># bmilasso_SL &lt;- BMI_LASSO(data$data_MI$X, data$data_MI$Y, model = &quot;Spike_Laplace&quot;,</span></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="co">#                  nburn = 4000, npost = 4000, seed = seed, a = 10, b = 1)</span></span></code></pre></div>
 <p>Since <code>&quot;Horseshoe&quot;</code> and <code>&quot;ARD&quot;</code> priors do not
 require any hyperparameter tuning, we recommend users start with these
 two options for simplicity and stability. For
@@ -695,7 +748,7 @@ multiple chains <code>nchain</code>.</p>
 <span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>                 <span class="at">nburn =</span> <span class="dv">4000</span>, <span class="at">npost =</span> <span class="dv">4000</span>, <span class="at">output_verbose =</span> <span class="cn">FALSE</span>, <span class="at">nchains =</span> <span class="dv">2</span>, <span class="at">seed =</span> seed)</span>
 <span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>end <span class="ot">=</span> <span class="fu">Sys.time</span>()</span>
 <span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">&quot;The running time for two chains in series:&quot;</span>, <span class="fu">difftime</span>(end, start, <span class="at">units =</span> <span class="st">&quot;mins&quot;</span>), <span class="st">&quot;mins&quot;</span>))</span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; [1] &quot;The running time for two chains in series: 0.0917880495389303 mins&quot;</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; [1] &quot;The running time for two chains in series: 0.168944768110911 mins&quot;</span></span>
 <span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a></span>
 <span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a></span>
 <span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co"># run 2 chains using 2 cores in parallel</span></span>
@@ -704,7 +757,7 @@ multiple chains <code>nchain</code>.</p>
 <span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>                 <span class="at">nburn =</span> <span class="dv">4000</span>, <span class="at">npost =</span> <span class="dv">4000</span>, <span class="at">output_verbose =</span> <span class="cn">FALSE</span>, <span class="at">nchains =</span> <span class="dv">2</span>, <span class="at">ncores =</span> <span class="dv">2</span>, <span class="at">seed =</span> seed)</span>
 <span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>end <span class="ot">=</span> <span class="fu">Sys.time</span>()</span>
 <span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">&quot;The running time for two chains in parallel:&quot;</span>, <span class="fu">difftime</span>(end, start, <span class="at">units =</span> <span class="st">&quot;mins&quot;</span>), <span class="st">&quot;mins&quot;</span>))</span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt; [1] &quot;The running time for two chains in parallel: 0.075262467066447 mins&quot;</span></span></code></pre></div>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt; [1] &quot;The running time for two chains in parallel: 0.168351248900096 mins&quot;</span></span></code></pre></div>
 <p>The returned results from multiple chains are different from those of
 a single chain. The summary tables <code>summary_table_selected</code>
 and <code>summary_table_full</code> are calculated by pooling posterior
@@ -714,41 +767,57 @@ compare the posterior estimates of each chain individually.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># the posterior draws of optimal submodels of two chains</span></span>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">str</span>(bmilasso_parallel<span class="sc">$</span>posterior_best_models)</span>
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt; List of 2</span></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt;  $ :List of 8</span></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt;   ..$ post_sigma2            : num [1:4000] 3.63 4.21 3.6 3.52 3.49 ...</span></span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta              : num [1:4000, 1:5, 1:20] 1.111 1.074 1.222 1.321 0.986 ...</span></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta         : num [1:20000, 1:20] 1.111 1.074 1.222 1.321 0.986 ...</span></span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha             : NULL</span></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_alpha        : num(0) </span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta_original     : num [1:4000, 1:5, 1:20] 1.101 1.064 1.211 1.309 0.977 ...</span></span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta_original: num [1:20000, 1:20] 1.101 1.064 1.211 1.309 0.977 ...</span></span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha_original    : num [1:4000, 1:5] -0.23 -0.336 -0.305 -0.257 -0.279 ...</span></span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt;  $ :List of 8</span></span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt;   ..$ post_sigma2            : num [1:4000] 3.87 4.06 3.91 4.08 3.88 ...</span></span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta              : num [1:4000, 1:5, 1:20] 0.858 0.873 0.926 0.832 1.15 ...</span></span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta         : num [1:20000, 1:20] 0.858 0.873 0.926 0.832 1.15 ...</span></span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha             : NULL</span></span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_alpha        : num(0) </span></span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta_original     : num [1:4000, 1:5, 1:20] 0.851 0.866 0.917 0.825 1.14 ...</span></span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta_original: num [1:20000, 1:20] 0.851 0.866 0.917 0.825 1.14 ...</span></span>
-<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha_original    : num [1:4000, 1:5] -0.228 -0.189 -0.297 -0.293 -0.253 ...</span></span>
-<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a></span>
-<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co"># summary table by pooling two chains</span></span>
-<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a>bmilasso_parallel<span class="sc">$</span>summary_table_selected</span>
-<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="co">#&gt; # A tibble: 22 × 10</span></span>
-<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="co">#&gt;    variable      mean median     sd    mad     q5    q95  rhat ess_bulk ess_tail</span></span>
-<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;        &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;</span></span>
-<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="co">#&gt;  1 intercept_… -0.240 -0.245 0.0737 0.0815 -0.354 -0.117  1.00    7175.    7086.</span></span>
-<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="co">#&gt;  2 beta_pool[…  1.12   1.12  0.198  0.197   0.797  1.45   1.00    7515.    7052.</span></span>
-<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="co">#&gt;  3 beta_pool[…  0.710  0.709 0.202  0.203   0.380  1.04   1.00    6839.    7402.</span></span>
-<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a><span class="co">#&gt;  4 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="co">#&gt;  5 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="co">#&gt;  6 beta_pool[…  0.851  0.851 0.186  0.187   0.544  1.16   1.00    7103.    7463.</span></span>
-<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a><span class="co">#&gt;  7 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a><span class="co">#&gt;  8 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a><span class="co">#&gt;  9 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a><span class="co">#&gt; 10 beta_pool[…  0      0     0      0       0      0     NA         NA       NA </span></span>
-<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a><span class="co">#&gt; # ℹ 12 more rows</span></span></code></pre></div>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt;  $ :List of 16</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt;   ..$ post_sigma2                      : num [1:4000] 3.99 3.49 3.35 3.74 3.83 ...</span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta                        : num [1:4000, 1:5, 1:20] 1.042 1.13 1.104 0.973 1.07 ...</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta                   : num [1:20000, 1:20] 1.042 1.13 1.104 0.973 1.07 ...</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha                       : NULL</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_alpha                  : num(0) </span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;   ..$ post_sigma2_projected            : num [1:4000] 3.99 3.49 3.35 3.74 3.82 ...</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta_projected              : num [1:4000, 1:5, 1:20] 1.043 1.128 1.102 0.976 1.07 ...</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta_projected         : num [1:20000, 1:20] 1.043 1.128 1.102 0.976 1.07 ...</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha_projected             : NULL</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_alpha_projected        : num(0) </span></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta_original               : num [1:4000, 1:5, 1:20] 1.033 1.12 1.095 0.965 1.06 ...</span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta_original          : num [1:20000, 1:20] 1.033 1.12 1.095 0.965 1.06 ...</span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta_original_projected     : num [1:4000, 1:5, 1:20] 1.034 1.118 1.092 0.968 1.06 ...</span></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta_original_projected: num [1:20000, 1:20] 1.034 1.118 1.092 0.968 1.06 ...</span></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha_original              : num [1:4000, 1:5] -0.327 -0.307 -0.317 -0.287 -0.265 ...</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha_original_projected    : num [1:4000, 1:5] -0.326 -0.306 -0.316 -0.288 -0.266 ...</span></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt;  $ :List of 16</span></span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt;   ..$ post_sigma2                      : num [1:4000] 3.56 3.86 3.69 3.73 4.11 ...</span></span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta                        : num [1:4000, 1:5, 1:20] 1.097 0.949 1.212 0.999 1.387 ...</span></span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta                   : num [1:20000, 1:20] 1.097 0.949 1.212 0.999 1.387 ...</span></span>
+<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha                       : NULL</span></span>
+<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_alpha                  : num(0) </span></span>
+<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="co">#&gt;   ..$ post_sigma2_projected            : num [1:4000] 3.56 3.86 3.69 3.73 4.11 ...</span></span>
+<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta_projected              : num [1:4000, 1:5, 1:20] 1.091 0.956 1.204 0.998 1.372 ...</span></span>
+<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta_projected         : num [1:20000, 1:20] 1.091 0.956 1.204 0.998 1.372 ...</span></span>
+<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha_projected             : NULL</span></span>
+<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_alpha_projected        : num(0) </span></span>
+<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta_original               : num [1:4000, 1:5, 1:20] 1.09 0.94 1.2 0.99 1.37 ...</span></span>
+<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta_original          : num [1:20000, 1:20] 1.09 0.94 1.2 0.99 1.37 ...</span></span>
+<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a><span class="co">#&gt;   ..$ post_beta_original_projected     : num [1:4000, 1:5, 1:20] 1.082 0.947 1.193 0.989 1.36 ...</span></span>
+<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a><span class="co">#&gt;   ..$ post_pool_beta_original_projected: num [1:20000, 1:20] 1.082 0.947 1.193 0.989 1.36 ...</span></span>
+<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha_original              : num [1:4000, 1:5] -0.274 -0.333 -0.336 -0.286 -0.295 ...</span></span>
+<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a><span class="co">#&gt;   ..$ post_alpha_original_projected    : num [1:4000, 1:5] -0.274 -0.331 -0.333 -0.286 -0.295 ...</span></span>
+<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a></span>
+<span id="cb10-39"><a href="#cb10-39" tabindex="-1"></a><span class="co"># summary table by pooling two chains</span></span>
+<span id="cb10-40"><a href="#cb10-40" tabindex="-1"></a>bmilasso_parallel<span class="sc">$</span>summary_table_selected</span>
+<span id="cb10-41"><a href="#cb10-41" tabindex="-1"></a><span class="co">#&gt; # A tibble: 22 × 10</span></span>
+<span id="cb10-42"><a href="#cb10-42" tabindex="-1"></a><span class="co">#&gt;    variable   mean median     sd    mad     q5    q95   rhat ess_bulk ess_tail</span></span>
+<span id="cb10-43"><a href="#cb10-43" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;     &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;</span></span>
+<span id="cb10-44"><a href="#cb10-44" tabindex="-1"></a><span class="co">#&gt;  1 rv       -0.261 -0.266 0.0737 0.0805 -0.376 -0.138  1.000   30082.   39019.</span></span>
+<span id="cb10-45"><a href="#cb10-45" tabindex="-1"></a><span class="co">#&gt;  2 rv[1]     1.12   1.12  0.205  0.205   0.787  1.46   1.00    37932.   39138.</span></span>
+<span id="cb10-46"><a href="#cb10-46" tabindex="-1"></a><span class="co">#&gt;  3 rv[2]     0.710  0.709 0.211  0.211   0.364  1.06   1.000   37075.   36829.</span></span>
+<span id="cb10-47"><a href="#cb10-47" tabindex="-1"></a><span class="co">#&gt;  4 rv[3]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb10-48"><a href="#cb10-48" tabindex="-1"></a><span class="co">#&gt;  5 rv[4]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="co">#&gt;  6 rv[5]     0.847  0.847 0.193  0.192   0.530  1.16   1.00    38056.   39012.</span></span>
+<span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a><span class="co">#&gt;  7 rv[6]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a><span class="co">#&gt;  8 rv[7]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb10-52"><a href="#cb10-52" tabindex="-1"></a><span class="co">#&gt;  9 rv[8]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb10-53"><a href="#cb10-53" tabindex="-1"></a><span class="co">#&gt; 10 rv[9]     0      0     0      0       0      0     NA          NA       NA </span></span>
+<span id="cb10-54"><a href="#cb10-54" tabindex="-1"></a><span class="co">#&gt; # ℹ 12 more rows</span></span></code></pre></div>
 </div>
 </div>
 <div id="frequentists-mi-lasso" class="section level2">
@@ -777,24 +846,6 @@ data with application to dioxin exposure study.” Statistics in Medicine,
 <span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
 <span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : NULL</span></span>
 <span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co">#&gt;   .. ..$ : chr [1:2] &quot;lamvec&quot; &quot;&quot;</span></span></code></pre></div>
-</div>
-<div id="discussion" class="section level2">
-<h2>Discussion</h2>
-<p>Here are some discussions about this package:</p>
-<ol style="list-style-type: decimal">
-<li>Currently, our package only supports continuous outcomes. Binary,
-categorical and ordinal outcomes are our research topic in the
-future.</li>
-<li>We support continuous and binary covariates. Selection for
-categorical covariates is tricky. Generally we transform a categorical
-variable into a set of binary dummy variables. Our package supports the
-selection on each dummy variable. For selection of the whole group, we
-will research it in the future.</li>
-<li>Similarly to other variable selection methods, our models are
-sensitive to multicollinearity. If some covariates are highly
-correlated, we suggest to do some pre-processing before using our
-methods.</li>
-</ol>
 </div>
 <div id="disclaimer" class="section level2">
 <h2>Disclaimer</h2>
