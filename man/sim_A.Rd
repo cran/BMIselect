@@ -17,13 +17,13 @@ sim_A(
 \arguments{
 \item{n}{Integer. Number of observations.}
 
-\item{p}{Integer. Number of covariates (columns). Takes values in \{20, 40\}.}
+\item{p}{Integer. Number of covariates (columns). Either 20, or 40 or more.}
 
 \item{type}{Character. Missingness mechanism: "MCAR" or "MAR".}
 
 \item{SNP}{Numeric. Signal-to-noise ratio controlling error variance.}
 
-\item{low_missing}{Logical. If TRUE, use low missingness rates; if FALSE, higher missingness.}
+\item{low_missing}{Logical. If TRUE, use low missingness rates; if FALSE, higher missingness. FALSE is available only for \code{p = 20}.}
 
 \item{n_imp}{Integer. Number of multiple imputations to generate.}
 

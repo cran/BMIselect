@@ -12,7 +12,7 @@
 
 <meta name="author" content="Jungang Zou" />
 
-<meta name="date" content="2026-08-21" />
+<meta name="date" content="2026-10-07" />
 
 <title>An Introduction to BMIselect</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">An Introduction to BMIselect</h1>
 <h4 class="author">Jungang Zou</h4>
-<h4 class="date">2026-08-21</h4>
+<h4 class="date">2026-10-07</h4>
 
 
 
@@ -466,15 +466,18 @@ variable selection method to address the limitations above:</p>
 <ol style="list-style-type: decimal">
 <li>Generate candidate variable subsets using different thresholds
 between 0 and 1 (specified by the parameter <code>grid</code>). The
-thresholds will be used by a scaled-neighborhood criterion (see more
-details in the paper). A candidate set excludes all variables when the
-threshold is 0, and keeping all variables when the threshold is 1.</li>
+threshold is the level of the symmetric credible interval for the
+shrinkage priors, and the posterior inclusion probability for the
+Spike-and-Laplace prior, with a variable entering the candidate set when
+its interval excludes zero or its probability reaches the threshold. A
+candidate set keeps all variables when the threshold is 0, and almost
+none when the threshold is 1.</li>
 <li>Fit submodels using each candidate subset. Each submodel attempts to
 approximate the full model as closely as possible.</li>
 <li>Evaluate each submodel using the Bayesian Information Criterion
 (BIC). Select the optimal submodel based on the smallest BIC value.</li>
-<li>Report the calibrated post-selection estimates from the optimal
-submodel.</li>
+<li>Report the approximately calibrated post-selection estimates from
+the optimal submodel.</li>
 </ol>
 <p>See Zou, J., Wang, S. and Chen, Q. (2025), Bayesian MI-LASSO for
 Variable Selection on Multiply-Imputed Data. ArXiv, 2211.00114. <a href="doi:10.48550/arXiv.2211.00114" class="uri">doi:10.48550/arXiv.2211.00114</a> for more details.</p>
@@ -495,7 +498,7 @@ Variable Selection on Multiply-Imputed Data. ArXiv, 2211.00114. <a href="doi:10.
 <span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; Max rank-normalized split-Rhat (full model) = 1.005</span></span>
 <span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt; Max rank-normalized split-Rhat (selected model) = 1.000</span></span>
 <span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt; Max rank-normalized split-Rhat (selected model, projected) = 1.000</span></span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; Running time for 1 chain: 0.06 min total (full-model MCMC 0.01 + four-step selection 0.05)</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; Running time for 1 chain: 0.05 min total (full-model MCMC 0.01 + four-step selection 0.05)</span></span>
 <span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a></span>
 <span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="fu">str</span>(bmilasso, <span class="at">max.level =</span> <span class="dv">1</span>)</span>
 <span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; List of 11</span></span>
@@ -514,7 +517,7 @@ Variable Selection on Multiply-Imputed Data. ArXiv, 2211.00114. <a href="doi:10.
 <span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;num_args&quot;)= list()</span></span>
 <span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt;  $ summary_table_selected_projected: drws_smm [22 × 10] (S3: draws_summary/tbl_df/tbl/data.frame)</span></span>
 <span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;num_args&quot;)= list()</span></span>
-<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt;  $ runtime                         : Named num [1:3] 0.05803 0.00944 0.04858</span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt;  $ runtime                         : Named num [1:3] 0.05498 0.00957 0.04541</span></span>
 <span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co">#&gt;   ..- attr(*, &quot;names&quot;)= chr [1:3] &quot;total&quot; &quot;mcmc&quot; &quot;selection&quot;</span></span>
 <span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="co">#&gt;  $ pooled                          : NULL</span></span></code></pre></div>
 <p>The returned object is a list, containing posterior draws, selected
@@ -748,7 +751,7 @@ multiple chains <code>nchain</code>.</p>
 <span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>                 <span class="at">nburn =</span> <span class="dv">4000</span>, <span class="at">npost =</span> <span class="dv">4000</span>, <span class="at">output_verbose =</span> <span class="cn">FALSE</span>, <span class="at">nchains =</span> <span class="dv">2</span>, <span class="at">seed =</span> seed)</span>
 <span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>end <span class="ot">=</span> <span class="fu">Sys.time</span>()</span>
 <span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">&quot;The running time for two chains in series:&quot;</span>, <span class="fu">difftime</span>(end, start, <span class="at">units =</span> <span class="st">&quot;mins&quot;</span>), <span class="st">&quot;mins&quot;</span>))</span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; [1] &quot;The running time for two chains in series: 0.168944768110911 mins&quot;</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; [1] &quot;The running time for two chains in series: 0.165699783960978 mins&quot;</span></span>
 <span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a></span>
 <span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a></span>
 <span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co"># run 2 chains using 2 cores in parallel</span></span>
@@ -757,7 +760,7 @@ multiple chains <code>nchain</code>.</p>
 <span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>                 <span class="at">nburn =</span> <span class="dv">4000</span>, <span class="at">npost =</span> <span class="dv">4000</span>, <span class="at">output_verbose =</span> <span class="cn">FALSE</span>, <span class="at">nchains =</span> <span class="dv">2</span>, <span class="at">ncores =</span> <span class="dv">2</span>, <span class="at">seed =</span> seed)</span>
 <span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>end <span class="ot">=</span> <span class="fu">Sys.time</span>()</span>
 <span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">&quot;The running time for two chains in parallel:&quot;</span>, <span class="fu">difftime</span>(end, start, <span class="at">units =</span> <span class="st">&quot;mins&quot;</span>), <span class="st">&quot;mins&quot;</span>))</span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt; [1] &quot;The running time for two chains in parallel: 0.168351248900096 mins&quot;</span></span></code></pre></div>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt; [1] &quot;The running time for two chains in parallel: 0.174911900361379 mins&quot;</span></span></code></pre></div>
 <p>The returned results from multiple chains are different from those of
 a single chain. The summary tables <code>summary_table_selected</code>
 and <code>summary_table_full</code> are calculated by pooling posterior
